@@ -1,0 +1,22 @@
+{
+  "donors": {
+    "Rahul Sharma": { "amount": 10000, "last_gift": "2024-03-01", "program": "Education" },
+    "Priya Singh":  { "amount": 5000,  "last_gift": "2024-08-15", "program": "Health" },
+    "Amit Verma":   { "amount": 25000, "last_gift": "2023-11-01", "program": "Food" }
+  },
+  "patients": {
+    "P001": { "name": "Sunita Devi",  "age": 45, "condition": "Diabetes",     "last_visit": "2024-09-01", "doctor": "Dr. Mehta" },
+    "P002": { "name": "Ravi Kumar",   "age": 32, "condition": "Hypertension", "last_visit": "2024-10-15", "doctor": "Dr. Sharma" },
+    "P003": { "name": "Anjali Singh", "age": 58, "condition": "Arthritis",    "last_visit": "2024-07-20", "doctor": "Dr. Gupta" }
+  },
+  "orders": {
+    "ORD-001": { "customer": "Meena Patel",   "product": "Laptop",     "status": "shipped",    "amount": 45000 },
+    "ORD-002": { "customer": "Suresh Gupta",  "product": "Headphones", "status": "processing", "amount": 2500 },
+    "ORD-003": { "customer": "Kavita Sharma", "product": "Mobile",     "status": "delivered",  "amount": 18000 }
+  },
+  "leads": {
+    "L001": { "name": "Rohit Jain",  "company": "TechCorp",   "status": "New",         "value": 500000 },
+    "L002": { "name": "Seema Rao",   "company": "RetailPlus", "status": "In Progress", "value": 120000 },
+    "L003": { "name": "Arun Kapoor", "company": "HealthCo",   "status": "Qualified",   "value": 800000 }
+  }
+}
