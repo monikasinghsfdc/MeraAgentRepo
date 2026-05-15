@@ -1,19 +1,9 @@
-"""
-FastAPI Server — Flat structure version
-Saari files ek hi folder mein hain
-"""
-
-import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from agent import agent_executor, CONFIG, ACTIVE, IND
+from agent import process_query, ACTIVE, IND
 
-app = FastAPI(
-    title="Smart Agent",
-    description="Cloud-independent AI agent. Koi license nahi.",
-    version="2.0.0"
-)
+app = FastAPI(title="Smart Agent", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,20 +17,13 @@ class Query(BaseModel):
 
 @app.post("/chat")
 async def chat(query: Query):
-    try:
-        result = agent_executor.invoke({"input": query.message})
-        return {
-            "response": result["output"],
-            "industry": ACTIVE,
-            "status": "success"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    response = process_query(query.message)
+    return {"response": response, "industry": ACTIVE, "status": "success"}
 
 @app.get("/health")
 def health():
-    return {"status": "running", "industry": ACTIVE}
+    return {"status": "running", "industry": ACTIVE, "industry_name": IND["name"]}
 
 @app.get("/")
 def root():
-    return {"message": "Agent chal raha hai!", "docs": "/docs"}
+    return {"message": "Agent chal raha hai!", "docs": "/docs", "industry": ACTIVE}
