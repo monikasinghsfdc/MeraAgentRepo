@@ -1,61 +1,65 @@
 """
-Smart Config-Driven Agent
-Sirf master_config.json badlo — yeh file kabhi nahi badalti!
+Simple Agent - Ollama ke bina
+Render free tier pe kaam karta hai
 """
 
 import json
-from langchain_ollama import ChatOllama
-from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain_core.prompts import ChatPromptTemplate
-from universal_tools import get_tools_for_industry
+import os
+from datetime import datetime
 
-# ─── Config padho ────────────────────────────────────────────────────────────
 with open("master_config.json") as f:
     CONFIG = json.load(f)
 
-# Active industry config lo
-ACTIVE = CONFIG["active_industry"]           # e.g. "nonprofit"
-IND    = CONFIG["industries"][ACTIVE]        # us industry ka config
-LLM_C  = CONFIG["llm"]                       # LLM settings
+ACTIVE = CONFIG["active_industry"]
+IND    = CONFIG["industries"][ACTIVE]
 
-print(f"\n✅ Agent start ho raha hai: {IND['name']}")
-print(f"🤖 LLM: {LLM_C['provider']} / {LLM_C['model']}\n")
+print(f"\n Agent start: {IND['name']}")
+print(f" Industry: {ACTIVE}\n")
 
-# ─── LLM — config se automatic ───────────────────────────────────────────────
-provider = LLM_C["provider"]
+with open("all_data.json") as f:
+    DATA = json.load(f)
 
-if provider == "ollama":
-    llm = ChatOllama(model=LLM_C["model"], temperature=LLM_C["temperature"])
+def process_query(message: str) -> str:
+    msg = message.lower()
 
-elif provider == "anthropic":
-    from langchain_anthropic import ChatAnthropic
-    llm = ChatAnthropic(model=LLM_C["options"]["anthropic"]["model"])
+    if ACTIVE == "nonprofit":
+        donors = DATA.get("donors", {})
+        for name, info in donors.items():
+            if name.lower() in msg:
+                months = (datetime.now() - datetime.strptime(info["last_gift"], "%Y-%m-%d")).days // 30
+                return f"Donor: {name}\nAmount: Rs {info['amount']}\nLast gift: {info['last_gift']} ({months} months ago)\nProgram: {info['program']}"
+        if any(w in msg for w in ["at-risk","at risk","inactive","lapsed","risk"]):
+            result = [f"{n} — {(datetime.now()-datetime.strptime(i['last_gift'],'%Y-%m-%d')).days//30} months inactive"
+                      for n,i in donors.items()
+                      if (datetime.now()-datetime.strptime(i['last_gift'],'%Y-%m-%d')).days//30 >= 6]
+            return "At-risk donors:\n" + "\n".join(result) if result else "Koi at-risk donor nahi"
+        if any(w in msg for w in ["sab","all","list","donors","sabhi"]):
+            return "Saare donors:\n" + "\n".join([f"{n}: Rs {i['amount']} — {i['program']}" for n,i in donors.items()])
+        return f"Main {IND['name']} agent hoon!\nPuch sakte hain:\n- Donor naam (Rahul, Priya, Amit)\n- At-risk donors\n- Saare donors"
 
-elif provider == "openai":
-    from langchain_openai import ChatOpenAI
-    llm = ChatOpenAI(model=LLM_C["options"]["openai"]["model"])
+    elif ACTIVE == "healthcare":
+        patients = DATA.get("patients", {})
+        for pid, info in patients.items():
+            if pid.lower() in msg or info["name"].lower() in msg:
+                days = (datetime.now()-datetime.strptime(info["last_visit"],"%Y-%m-%d")).days
+                return f"Patient: {info['name']} (Age: {info['age']})\nCondition: {info['condition']}\nLast visit: {days} days ago\nDoctor: {info['doctor']}"
+        return f"Main {IND['name']} agent hoon!\nPatient ID puchein: P001, P002, P003"
 
-elif provider == "gemini":
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    llm = ChatGoogleGenerativeAI(model=LLM_C["options"]["gemini"]["model"])
+    elif ACTIVE == "ecommerce":
+        orders = DATA.get("orders", {})
+        for oid, info in orders.items():
+            if oid.lower() in msg:
+                return f"Order: {oid}\nCustomer: {info['customer']}\nProduct: {info['product']}\nStatus: {info['status'].upper()}\nAmount: Rs {info['amount']}"
+        return f"Main {IND['name']} agent hoon!\nOrder ID puchein: ORD-001, ORD-002, ORD-003"
 
-# ─── Tools — config se automatic ─────────────────────────────────────────────
-tools = get_tools_for_industry(IND["tools"])
+    elif ACTIVE == "salesforce":
+        leads = DATA.get("leads", {})
+        for lid, info in leads.items():
+            if lid.lower() in msg or info["name"].lower() in msg:
+                return f"Lead: {info['name']} ({info['company']})\nStatus: {info['status']}\nValue: Rs {info['value']}"
+        if any(w in msg for w in ["pipeline","summary","total"]):
+            total = sum(l["value"] for l in leads.values())
+            return f"Pipeline Summary:\nTotal leads: {len(leads)}\nTotal value: Rs {total}"
+        return f"Main {IND['name']} agent hoon!\nLead ID puchein: L001, L002, L003"
 
-# ─── Prompt — config se automatic ────────────────────────────────────────────
-prompt = ChatPromptTemplate.from_messages([
-    ("system", IND["system_prompt"]),
-    ("human", "{input}"),
-    ("placeholder", "{agent_scratchpad}"),
-])
-
-# ─── Agent banao ─────────────────────────────────────────────────────────────
-agent = create_tool_calling_agent(llm, tools, prompt)
-
-agent_executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True,
-    max_iterations=5,
-    handle_parsing_errors=True
-)
+    return f"Main {IND['name']} agent hoon! Kya jaanna chahte hain?"
